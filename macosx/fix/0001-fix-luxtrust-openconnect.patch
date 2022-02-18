@@ -1,0 +1,37 @@
+diff --git a/lib/tls-sig.c b/lib/tls-sig.c
+index 7d2b043..393d5c3 100644
+--- a/lib/tls-sig.c
++++ b/lib/tls-sig.c
+@@ -627,7 +627,31 @@ _gnutls_handshake_sign_crt_vrfy12(gnutls_session_t session,
+ 	const gnutls_sign_entry_st *se;
+ 	int ret;
+ 
+-	sign_algo = _gnutls_session_get_sign_algo(session, cert, pkey, 1, GNUTLS_KX_UNKNOWN);
++	// FIX to force RSA-SHA1 algorithm with CA LuxTrust Global Qualified CA 3" 
++	gnutls_x509_crt_t x509;
++	char issuerCN[MAX_DN];
++	size_t issuerCN_size;
++
++	// Init x509
++	ret = gnutls_x509_crt_init(&x509);
++	if (ret < 0)
++		gnutls_assert_val(ret);
++	// Import pcert to x509
++	ret = gnutls_x509_crt_import(x509, &cert->cert.data, GNUTLS_X509_FMT_DER);
++	if (ret < 0)
++		gnutls_assert_val(ret);
++	// Find the issuer CN
++	//  
++	ret = gnutls_x509_crt_get_issuer_dn_by_oid(x509, GNUTLS_OID_X520_COMMON_NAME, 0, 0, issuerCN, &issuerCN_size);
++	if (ret < 0)
++		gnutls_assert_val(ret);
++
++	if (strcmp(issuerCN, "LuxTrust Global Qualified CA 3") == 0)
++	{
++		sign_algo = GNUTLS_SIGN_RSA_SHA1;
++	}else{
++		sign_algo = _gnutls_session_get_sign_algo(session, cert, pkey, 1, GNUTLS_KX_UNKNOWN);
++	}
+ 	if (sign_algo == GNUTLS_SIGN_UNKNOWN) {
+ 		gnutls_assert();
+ 		return GNUTLS_E_UNWANTED_ALGORITHM;

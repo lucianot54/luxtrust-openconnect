@@ -1,0 +1,64 @@
+From d4f85753417e76b0498b951334c6038b2c2aca51 Mon Sep 17 00:00:00 2001
+From: William Robinet <william.robinet@conostix.com>
+Date: Tue, 22 Dec 2020 09:33:19 +0100
+Subject: [PATCH] Fix LuxTrust + OpenConnect, possibly break some other stuff
+
+---
+ debian/rules        | 14 ++++++++------
+ lib/ext/signature.c |  2 ++
+ 2 files changed, 10 insertions(+), 6 deletions(-)
+
+diff --git a/debian/rules b/debian/rules
+index cbdf7fd..01bc29f 100755
+--- a/debian/rules
++++ b/debian/rules
+@@ -1,6 +1,7 @@
+ #! /usr/bin/make -f
+ # Build the gnutls package for Debian.
+
++export DEB_BUILD_OPTIONS := nocheck
+ export DEB_BUILD_MAINT_OPTIONS := hardening=+bindnow
+ export DEB_CFLAGS_MAINT_APPEND := -Wall
+ export DEB_CXXFLAGS_MAINT_APPEND := -Wall
+@@ -35,6 +36,7 @@
+ 	--with-packager=Debian \
+ 	--with-packager-bug-reports=http://bugs.debian.org/ \
+ 	--with-packager-version=$(DEB_VERSION) \
++	--disable-tests
+
+ BDIR = -O--builddirectory=b4deb
+
+@@ -97,12 +99,12 @@ endif
+ 	find debian/*/usr/lib/* -name '*.so.*.*' -type f -exec \
+ 		chrpath -d {} +
+
+-override_dh_installinfo:
+-	dh_installinfo $(BDIR)
+-	if test -e debian/gnutls-doc ; then \
+-		cd debian/gnutls-doc/usr/share/info && \
+-		sed -i -e 's:image src="\([^"]*.png"\):image src="/usr/share/doc/gnutls-doc/html/\1:g' *.info* ; \
+-	fi
++#override_dh_installinfo:
++#	dh_installinfo $(BDIR)
++#	if test -e debian/gnutls-doc ; then \
++#		cd debian/gnutls-doc/usr/share/info && \
++#		sed -i -e 's:image src="\([^"]*.png"\):image src="/usr/share/doc/gnutls-doc/html/\1:g' *.info* ; \
++#	fi
+
+ override_dh_installchangelogs:
+ 	dh_installchangelogs $(BDIR)
+diff --git a/lib/ext/signature.c b/lib/ext/signature.c
+index 44da666..331d0d0 100644
+--- a/lib/ext/signature.c
++++ b/lib/ext/signature.c
+@@ -310,6 +310,8 @@ _gnutls_session_get_sign_algo(gnutls_session_t session,
+ 			continue;
+
+ 		_gnutls_handshake_log("checking cert compat with %s\n", se->name);
++		if (se->name[7] != '1')
++			continue;
+
+ 		if (_gnutls_privkey_compatible_with_sig(privkey, priv->sign_algorithms[i]) == 0)
+ 			continue;
+--
+2.20.1

@@ -1,0 +1,4 @@
+.DS_Store
+macosx/scripts/.config
+macosx/scripts/gnutls-3.6.16
+macosx/scripts/*.tar.xz
